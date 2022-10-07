@@ -1,0 +1,7 @@
+{
+    "downloaderApp": "yt-dlp",
+    "downloadCommand": "$params $url",
+    "downloadFolder": "E:\\Download\\VideoDl\\MyApp",
+    "downloadParams": "--remux-video mp4",
+    "autoConfirmDownload": true
+}

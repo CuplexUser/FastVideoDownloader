@@ -78,32 +78,36 @@ namespace FastVideoDownloader.Service
 
                         if (process != null)
                         {
-                            var buffer = new char[4096];
+                            var buffer = new char[2048];
                             var memoryBuffer = new Memory<char>(buffer);
 
                             using StreamReader reader = process.StandardOutput;
+                            Log.Debug("Starting app with arguments: {args}", psi.Arguments);
 
                             //Console.SetIn(reader);
                             //var stream = Console.OpenStandardInput(256);
 
                             while (!reader.EndOfStream)
                             {
-                                int charsRead = await reader.ReadBlockAsync(memoryBuffer,tokenSource.Token); 
-                                if (charsRead>0)
+                                int charsRead = await reader.ReadBlockAsync(memoryBuffer, tokenSource.Token);
+                                if (charsRead > 0)
                                 {
-                                    await _downloadTextWriter.WriteAsync(memoryBuffer,tokenSource.Token);
-                                    
+                                    await _downloadTextWriter.WriteAsync(memoryBuffer, tokenSource.Token);
+
                                     Console.SetCursorPosition(0, Console.CursorTop);
                                 }
                             }
 
                             await _downloadTextWriter.WriteLineAsync("");
-                            Console.ForegroundColor= ConsoleColor.Green;
-                            await _downloadTextWriter.WriteLineAsync("Download Complete");
                             Console.ResetColor();
                             await process.WaitForExitAsync();
 
-
+                            if (process.ExitCode == 0)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                await _downloadTextWriter.WriteLineAsync("Download Complete");
+                                Console.ResetColor();
+                            }
                         }
                     }
                     catch (Exception ex)

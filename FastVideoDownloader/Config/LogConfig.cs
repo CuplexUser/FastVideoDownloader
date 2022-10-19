@@ -7,17 +7,16 @@ namespace FastVideoDownloader.Config
     public class LogConfig
     {
         public ILogger Logger { get; private set; }
-        
+
         public bool InitLogConfig()
         {
             if (Logger == null)
             {
                 Logger = CreateLogger();
-                return true;
+                return Logger != null;
             }
             
-
-            return false;
+            return Logger != null;
         }
 
         private static ILogger CreateLogger()

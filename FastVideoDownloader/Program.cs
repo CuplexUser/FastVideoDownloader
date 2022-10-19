@@ -1,14 +1,24 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using FastVideoDownloader.Config;
 using FastVideoDownloader.Models;
 using FastVideoDownloader.Service;
+using Newtonsoft.Json;
 using Serilog;
 
 
 LogConfig logConfig = new();
-logConfig.InitLogConfig();
+if (!logConfig.InitLogConfig())
+{
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine("Failed to initialize log configuration!");
+    Environment.Exit(1);
+}
+    
+
 ILogger logger = logConfig.Logger;
 Log.Logger = logger;
 
@@ -29,6 +39,14 @@ else
 
 var settings = AppSettings.ReadAppSettings();
 logger.Information("Paste Url... or enter quit to exit");
+
+List<Tuple<string, ConsoleColor>> HelpTexts = new List<Tuple<string, ConsoleColor>>
+{
+    new("**Available commands are**", ConsoleColor.Blue),
+    new("Enter download url [downloads video]\nexit or quit [quit application]\nhelp [show help text]\nclear [clear console]", ConsoleColor.White),
+    new("config [prints configuration options]", ConsoleColor.White),
+    new("Configuration settings are defined in 'config.json'", ConsoleColor.Gray)
+};
 
 //Console.WriteLine("Config read and App is Ready");
 //Console.WriteLine("Paste Url... or enter quit to exit");
@@ -55,15 +73,29 @@ do
     }
     else
     {
-        if (input is "quit")
+        if (input is "quit" or "exit")
             break;
-        if (input is "clear")
-            Console.Clear();
-        else
+        switch (input)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("No recognized command or url");
-            Console.ResetColor();
+            case "help":
+                foreach (var helpText in HelpTexts)
+                {
+                    Console.ForegroundColor = helpText.Item2;
+                    Console.WriteLine(helpText.Item1);
+                }
+                Console.ResetColor();
+                break;
+            case "clear":
+                Console.Clear();
+                break;
+            case "config":
+                Console.WriteLine(JsonConvert.SerializeObject(settings, Formatting.Indented));
+                break;
+            default:
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("No recognized command or url, enter 'help' for options.");
+                Console.ResetColor();
+                break;
         }
     }
 

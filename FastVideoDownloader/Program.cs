@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Text.RegularExpressions;
+using FastVideoDownloader.Automation;
 using FastVideoDownloader.Config;
 using FastVideoDownloader.Models;
 using FastVideoDownloader.Service;
@@ -15,14 +16,14 @@ if (!logConfig.InitLogConfig())
     Console.WriteLine("Failed to initialize log configuration!");
     Environment.Exit(1);
 }
-    
 
+AsyncFileAccessService _asyncFileAccessService = new AsyncFileAccessService(true);
 ILogger logger = logConfig.Logger;
 Log.Logger = logger;
 
 Console.WriteLine("Starting AppRunnerService");
 
-var taskRunnerService = new AppRunnerService();
+var taskRunnerService = new AppRunnerService(_asyncFileAccessService);
 bool result = await taskRunnerService.Start();
 
 if (result)
@@ -35,7 +36,9 @@ else
     Environment.Exit(1);
 }
 
-var settings = AppSettings.ReadAppSettings();
+
+
+var settings = await _asyncFileAccessService.LoadAppSettingsAsync();
 logger.Information("Paste Url... or enter quit to exit");
 
 List<Tuple<string, ConsoleColor>> HelpTexts = new List<Tuple<string, ConsoleColor>>
@@ -43,12 +46,50 @@ List<Tuple<string, ConsoleColor>> HelpTexts = new List<Tuple<string, ConsoleColo
     new("**Available commands are**", ConsoleColor.Blue),
     new("Enter download url [downloads video]\nexit or quit [quit application]\nhelp [show help text]\nclear [clear console]", ConsoleColor.White),
     new("config [prints configuration options]", ConsoleColor.White),
+    new("--reload-conf updates app settings based on file changes", ConsoleColor.White),
     new("Configuration settings are defined in 'config.json'", ConsoleColor.Gray)
 };
+
+ConfigFileChangeListener changeListener = new ConfigFileChangeListener(settings, SettingsFileModel.CreateModel(ConfigReader.GetConfigFilePath()));
+changeListener.Changed += ConfigChangeListener_Changed;
+changeListener.Deleted += OnConfigFileDeleted;
+bool status = changeListener.StartMonitoringConfigFile();
+
+
+
+if (!status)
+{
+    Log.Error("Failed to Start Config File Monitoring");
+}
+
+void OnConfigFileDeleted(object sender, FileSystemEventArgs e)
+{
+    Console.WriteLine("Configuration File was deleted!");
+    Console.WriteLine("Still using previous values.");
+}
+
+void ConfigChangeListener_Changed(object sender, FileSystemEventArgs e)
+{
+    Console.WriteLine("Configuration File was changed!");
+    Console.WriteLine("Updating internal settings from config file");
+
+    Task.Factory.StartNew(async () =>
+    {
+        settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+    });
+}
+
+async Task ReloadLoadSettingsAsync()
+{
+    settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+    Log.Debug("settings object model was updated");
+}
 
 //Console.WriteLine("Config read and App is Ready");
 //Console.WriteLine("Paste Url... or enter quit to exit");
 Regex urlRegex = new Regex(@"(^http://[\w\./]+)|(^https://[\w\./]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+
 
 do
 {
@@ -69,10 +110,13 @@ do
             taskRunnerService.QueueJob(input, Console.Out);
         }
     }
-    else
+    else if (!string.IsNullOrEmpty(input))
     {
+        input = input.TrimStart('-');
+
         if (input is "quit" or "exit")
             break;
+
         switch (input)
         {
             case "help":
@@ -89,6 +133,25 @@ do
             case "config":
                 Console.WriteLine(JsonConvert.SerializeObject(settings, Formatting.Indented));
                 break;
+            case "reload-conf":
+                try
+                {
+                    await ReloadLoadSettingsAsync();
+                    Console.WriteLine("reloaded app settings");
+                    Console.WriteLine("Current config:");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine(JsonConvert.SerializeObject(settings, Formatting.Indented));
+                    Console.ResetColor();
+                }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Error, failed to parse the updated settings!");
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Log.Error(ex, "Error message: {message}", ex.Message);
+                    Console.ResetColor();
+                }
+                break;
             default:
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("No recognized command or url, enter 'help' for options.");
@@ -99,5 +162,7 @@ do
 
 } while (true);
 
+changeListener.Dispose();
+changeListener = null;
 await taskRunnerService.Stop();
 Console.WriteLine("App closing, press enter to close");

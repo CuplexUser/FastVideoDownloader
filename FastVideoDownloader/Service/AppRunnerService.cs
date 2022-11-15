@@ -13,9 +13,11 @@ namespace FastVideoDownloader.Service
         private TextWriter _downloadTextWriter;
         private AppSettings _settings;
         private bool runMainTask = true;
+        private readonly AsyncFileAccessService _asyncFileAccessService;
 
-        public AppRunnerService()
+        public AppRunnerService(AsyncFileAccessService asyncFileAccessService)
         {
+            _asyncFileAccessService=asyncFileAccessService;
             _autoReset = new AutoResetEvent(true);
             _jobQueue = new Queue<string>();
 
@@ -31,22 +33,14 @@ namespace FastVideoDownloader.Service
             await taskRunner;
         }
 
-        public Task<bool> Start()
+        public async Task<bool> Start()
         {
-            return Task<bool>.Factory.StartNew(() =>
+            _settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+            return await Task<bool>.Factory.StartNew(() =>
             {
-                ValueTask<AppSettings> valueTask = new(LoadSettings());
-                _settings = valueTask.Result;
                 _autoReset.Set();
                 return taskRunner.Status == TaskStatus.Running;
             });
-        }
-
-        private async Task<AppSettings> LoadSettings()
-        {
-            AppSettings settings = await Task<AppSettings>.Factory.StartNew(() => AppSettings.ReadAppSettings());
-
-            return settings;
         }
 
         private async Task<bool> MainLoop()

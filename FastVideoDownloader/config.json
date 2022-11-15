@@ -1,7 +1,7 @@
 {
-    "downloaderApp": "yt-dlp",
+    "downloaderApp": "yt-dlp.exe",
     "downloadCommand": "$params $url",
-    "downloadFolder": "E:\\Download\\VideoDl\\MyApp",
+    "downloadFolder": "E:\\Download\\YouTube",
     "downloadParams": "--remux-video mp4",
     "autoConfirmDownload": true
 }

@@ -2,6 +2,7 @@
 
 namespace FastVideoDownloader.Models
 {
+    [JsonObject(Id = "AppSettings")]
     public class AppSettings
     {
         [JsonProperty("downloadCommand", Order = 1)]
@@ -20,7 +21,7 @@ namespace FastVideoDownloader.Models
         public bool AutoConfirmDownload { get; set; }
 
         [JsonProperty("alternetiveConfigData", Order = 6, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string AlternetiveConfigData { get; set; }
+        public string AlternativeConfigData { get; set; }
 
         public AppSettings()
         {

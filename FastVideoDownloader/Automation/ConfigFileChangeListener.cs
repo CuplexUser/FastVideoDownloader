@@ -4,14 +4,15 @@ using FastVideoDownloader.Service;
 
 namespace FastVideoDownloader.Automation
 {
-    public class ConfigFileChangeListener : IDisposable
+    public sealed class ConfigFileChangeListener : IDisposable
     {
         private readonly FileSystemWatcher _fileSystemWatcher;
-        private AppSettings _settings;
-        private SettingsFileModel _configFileModel;
+
+        private readonly SettingsFileModel _configFileModel;
         private bool monitoringActive = false;
         private readonly CancellationTokenSource cancellationTokenSource;
         private Task backgroundWorker;
+
         private readonly AsyncFileAccessService _fileAccessService;
 
         public event EventHandler<FileSystemEventArgs> Changed;
@@ -19,29 +20,26 @@ namespace FastVideoDownloader.Automation
 
         public SettingsFileModel SettingsMetadata
         {
-            get
-            {
-                return _configFileModel;
-            }
+            get { return _configFileModel; }
         }
 
-        public ConfigFileChangeListener(AppSettings settings, SettingsFileModel configFileModel)
+        public ConfigFileChangeListener(SettingsFileModel configFileModel, AsyncFileAccessService fileAccessService)
         {
-            _settings = settings;
+            _fileAccessService = fileAccessService;
             _fileSystemWatcher = new FileSystemWatcher();
             _fileSystemWatcher.Changed += OnConfigFileChanged;
             _fileSystemWatcher.Deleted += OnConfigFileDeleted;
             _configFileModel = configFileModel;
             cancellationTokenSource = new CancellationTokenSource();
-            _fileAccessService = new AsyncFileAccessService(true);
+
         }
 
-        protected virtual void OnConfigFileDeleted(object sender, FileSystemEventArgs e)
+        private void OnConfigFileDeleted(object sender, FileSystemEventArgs e)
         {
 
         }
 
-        protected virtual void OnConfigFileChanged(object sender, FileSystemEventArgs e)
+        private void OnConfigFileChanged(object sender, FileSystemEventArgs e)
         {
             Console.WriteLine("Settings file was updated, Reloading!");
         }
@@ -58,6 +56,7 @@ namespace FastVideoDownloader.Automation
                 Log.Warning("Given config file path does not exist");
                 return false;
             }
+
             _fileSystemWatcher.BeginInit();
 
             _fileSystemWatcher.EnableRaisingEvents = true;
@@ -113,23 +112,23 @@ namespace FastVideoDownloader.Automation
             if (backgroundWorker.Status == TaskStatus.RanToCompletion)
                 backgroundWorker.Dispose();
         }
+    
+    //    public async Task<SettingsFileModel> UpdateSettingsMetaModel()
+    //    {
+    //        SettingsFileModel model= null;
+    //        DateTime lastWriteTime = _configFileModel.LastWriteTime;
 
-        public async Task<SettingsFileModel> UpdateSettingsMetaModel()
-        {
-            SettingsFileModel model= null;
-            DateTime lastWriteTime = _configFileModel.LastWriteTime;
+    //        _settings = await _fileAccessService.LoadAppSettingsAsync();
+    //        model = _fileAccessService.SettingsMetadata;
 
-            _settings = await _fileAccessService.LoadAppSettingsAsync();
-            model = _fileAccessService.SettingsMetadata;
-
-            if (SettingsMetadata.LastWriteTime != lastWriteTime)
-            {
-                //Reload settings
-                Log.Debug("Reloading App Settings from file since the file has changed. Triggered from UpdateSettingsMetaModel()");
+    //        if (SettingsMetadata.LastWriteTime != lastWriteTime)
+    //        {
+    //            //Reload settings
+    //            Log.Debug("Reloading App Settings from file since the file has changed. Triggered from UpdateSettingsMetaModel()");
                 
-            }
+    //        }
 
-            return model;
-        }
+    //        return model;
+    //    }
     }
 }

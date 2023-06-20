@@ -11,7 +11,6 @@ namespace FastVideoDownloader.Service
         private readonly Task taskRunner;
         private readonly CancellationTokenSource tokenSource;
         private TextWriter _downloadTextWriter;
-        private AppSettings _settings;
         private bool runMainTask = true;
         private readonly AsyncFileAccessService _asyncFileAccessService;
 
@@ -35,7 +34,8 @@ namespace FastVideoDownloader.Service
 
         public async Task<bool> Start()
         {
-            _settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+            var settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+
             return await Task<bool>.Factory.StartNew(() =>
             {
                 _autoReset.Set();
@@ -47,23 +47,25 @@ namespace FastVideoDownloader.Service
         {
             while (runMainTask)
             {
+                var settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+
                 while (_jobQueue.Count > 0)
                 {
                     string url = _jobQueue.Dequeue();
-                    string parameters = _settings.DownloadParams;
-                    parameters += $" --paths {_settings.DownloadFolder}";
+                    string parameters = settings.DownloadParams;
+                    parameters += $" --paths {settings.DownloadFolder}";
 
                     // Full command string
-                    string command = _settings.DownloadCommand.Replace("$params", parameters).Replace("$url", url);
+                    string command = settings.DownloadCommand.Replace("$params", parameters).Replace("$url", url);
 
                     await _downloadTextWriter.WriteLineAsync($"Downloading {url}");
                     var psi = new ProcessStartInfo
                     {
-                        FileName = _settings.DownloaderApp,
+                        FileName = settings.DownloaderApp,
                         Arguments = command,
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
-                        WorkingDirectory = _settings.DownloadFolder,
+                        WorkingDirectory = settings.DownloadFolder,
                     };
 
                     try
@@ -119,6 +121,7 @@ namespace FastVideoDownloader.Service
 
             return true;
         }
+
 
 
         public void QueueJob(string input, TextWriter textWriter)

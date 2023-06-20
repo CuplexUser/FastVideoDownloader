@@ -17,9 +17,20 @@ if (!logConfig.InitLogConfig())
     Environment.Exit(1);
 }
 
+AppSettings settings;
+
 AsyncFileAccessService _asyncFileAccessService = new AsyncFileAccessService(true);
+settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+
+
+
+
+
+
+
 ILogger logger = logConfig.Logger;
 Log.Logger = logger;
+logger.Information("Paste Url... or enter quit to exit");
 
 Console.WriteLine("Starting AppRunnerService");
 
@@ -38,8 +49,7 @@ else
 
 
 
-var settings = await _asyncFileAccessService.LoadAppSettingsAsync();
-logger.Information("Paste Url... or enter quit to exit");
+
 
 List<Tuple<string, ConsoleColor>> HelpTexts = new List<Tuple<string, ConsoleColor>>
 {
@@ -50,34 +60,12 @@ List<Tuple<string, ConsoleColor>> HelpTexts = new List<Tuple<string, ConsoleColo
     new("Configuration settings are defined in 'config.json'", ConsoleColor.Gray)
 };
 
-ConfigFileChangeListener changeListener = new ConfigFileChangeListener(settings, SettingsFileModel.CreateModel(ConfigReader.GetConfigFilePath()));
-changeListener.Changed += ConfigChangeListener_Changed;
-changeListener.Deleted += OnConfigFileDeleted;
-bool status = changeListener.StartMonitoringConfigFile();
 
 
 
-if (!status)
-{
-    Log.Error("Failed to Start Config File Monitoring");
-}
 
-void OnConfigFileDeleted(object sender, FileSystemEventArgs e)
-{
-    Console.WriteLine("Configuration File was deleted!");
-    Console.WriteLine("Still using previous values.");
-}
 
-void ConfigChangeListener_Changed(object sender, FileSystemEventArgs e)
-{
-    Console.WriteLine("Configuration File was changed!");
-    Console.WriteLine("Updating internal settings from config file");
 
-    Task.Factory.StartNew(async () =>
-    {
-        settings = await _asyncFileAccessService.LoadAppSettingsAsync();
-    });
-}
 
 async Task ReloadLoadSettingsAsync()
 {
@@ -162,7 +150,6 @@ do
 
 } while (true);
 
-changeListener.Dispose();
-changeListener = null;
+
 await taskRunnerService.Stop();
 Console.WriteLine("App closing, press enter to close");

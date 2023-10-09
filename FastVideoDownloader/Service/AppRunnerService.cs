@@ -12,16 +12,22 @@ namespace FastVideoDownloader.Service
         private readonly CancellationTokenSource tokenSource;
         private TextWriter _downloadTextWriter;
         private bool runMainTask = true;
-        private readonly AsyncFileAccessService _asyncFileAccessService;
+        private readonly AppSettingsService _asyncFileAccessService;
 
-        public AppRunnerService(AsyncFileAccessService asyncFileAccessService)
+        public AppRunnerService(AppSettingsService asyncFileAccessService)
         {
-            _asyncFileAccessService=asyncFileAccessService;
+            _asyncFileAccessService = asyncFileAccessService;
             _autoReset = new AutoResetEvent(true);
             _jobQueue = new Queue<string>();
 
             tokenSource = new CancellationTokenSource();
             taskRunner = Task.Factory.StartNew(MainLoop, tokenSource.Token);
+            _asyncFileAccessService.AppSettingsChanged += OnAppsettingsChanged;
+        }
+
+        private void OnAppsettingsChanged(object sender, EventArgs e)
+        {
+          
         }
 
         public async Task Stop()
@@ -45,10 +51,10 @@ namespace FastVideoDownloader.Service
 
         private async Task<bool> MainLoop()
         {
+            var settings = await _asyncFileAccessService.LoadAppSettingsAsync();
+
             while (runMainTask)
             {
-                var settings = await _asyncFileAccessService.LoadAppSettingsAsync();
-
                 while (_jobQueue.Count > 0)
                 {
                     string url = _jobQueue.Dequeue();
@@ -61,7 +67,7 @@ namespace FastVideoDownloader.Service
                     await _downloadTextWriter.WriteLineAsync($"Downloading {url}");
                     var psi = new ProcessStartInfo
                     {
-                        FileName = settings.DownloaderApp,
+                        FileName = settings.DownloadCommand,
                         Arguments = command,
                         UseShellExecute = false,
                         RedirectStandardOutput = true,

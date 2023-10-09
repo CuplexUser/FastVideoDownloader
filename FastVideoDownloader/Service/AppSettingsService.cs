@@ -10,13 +10,8 @@ namespace FastVideoDownloader.Service;
 /// <summary>
 /// AsyncFileAccessService
 /// </summary>
-public class AsyncFileAccessService:IDisposable
+public class AppSettingsService : IDisposable
 {
-    /// <summary>
-    /// The application settings
-    /// </summary>
-    private AppSettings _appSettings;
-
     /// <summary>
     /// The file model
     /// </summary>
@@ -30,33 +25,16 @@ public class AsyncFileAccessService:IDisposable
     /// </summary>
     private readonly string settingsFilepath;
 
-    /// <summary>
-    /// Gets a value indicating whether [only reload from disk after change].
-    /// </summary>
-    /// <value>
-    ///   <c>true</c> if [only reload from disk after change]; otherwise, <c>false</c>.
-    /// </value>
-    public bool OnlyReloadFromDiskAfterChange { get; }
-
-    public SettingsFileModel SettingsMetadata { get => _fileModel; }
+    public event EventHandler AppSettingsChanged;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AsyncFileAccessService"/> class.
-    /// </summary>
-    /// <param name="onlyReloadFromDiskAfterChange">if set to <c>true</c> [only reload from disk after change].</param>
-    public AsyncFileAccessService(bool onlyReloadFromDiskAfterChange)
+    /// Initializes a new instance of the <see cref="AppSettingsService"/> class.
+    /// </summary>    
+    public AppSettingsService(string settingsFilePath)
     {
-        
- 
-        _changeListener = new ConfigFileChangeListener(SettingsFileModel.CreateModel(ConfigReader.GetConfigFilePath()),this);
+        _changeListener = new ConfigFileChangeListener(SettingsFileModel.CreateModel(ConfigHelper.GetConfigFilePath()), this);
+        settingsFilepath = settingsFilePath;
 
-        settingsFilepath = ConfigReader.GetConfigFilePath();
-        OnlyReloadFromDiskAfterChange = onlyReloadFromDiskAfterChange;
-
-        
-        
-
-    
         _changeListener.Changed += ConfigChangeListener_Changed;
         _changeListener.Deleted += OnConfigFileDeleted;
         bool status = _changeListener.StartMonitoringConfigFile();
@@ -78,11 +56,11 @@ public class AsyncFileAccessService:IDisposable
     {
         Console.WriteLine("Configuration File was changed!");
         Console.WriteLine("Updating internal settings from config file");
+    }
 
-        Task.Factory.StartNew(async () =>
-        {
-            _appSettings = await LoadAppSettingsAsync();
-        });
+    private void TriggerChangedEvent()
+    {
+        AppSettingsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -151,14 +129,6 @@ public class AsyncFileAccessService:IDisposable
         if (!File.Exists(settingsFilepath))
             throw new ApplicationException($"Can not open config file at {settingsFilepath}");
 
-        if (OnlyReloadFromDiskAfterChange && _appSettings != null && _fileModel != null)
-        {
-            if (!IsLastWriteTimeModified(_fileModel))
-            {
-                return _appSettings;
-            }
-        }
-
 
         string jsonData = await ReadTextAsync(settingsFilepath);
 
@@ -167,7 +137,6 @@ public class AsyncFileAccessService:IDisposable
             try
             {
                 instance = JsonConvert.DeserializeObject<AppSettings>(jsonData);
-                _appSettings = instance;
                 _fileModel = SettingsFileModel.CreateModel(settingsFilepath);
             }
             catch (Exception ex)

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "nuget.packagesourcemapper": {
+      "version": "1.0.415202",
+      "commands": [
+        "packagesourcemapper"
+      ]
+    }
+  }
+}

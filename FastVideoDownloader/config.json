@@ -1,5 +1,4 @@
-{
-    "downloaderApp": "yt-dlp.exe",
+{  
     "downloadCommand": "$params $url",
     "downloadFolder": "E:\\Download\\Instagram",
     "downloadParams": "-U",

@@ -13,7 +13,7 @@ namespace FastVideoDownloader.Automation
         private readonly CancellationTokenSource cancellationTokenSource;
         private Task backgroundWorker;
 
-        private readonly AsyncFileAccessService _fileAccessService;
+        private readonly AppSettingsService _fileAccessService;
 
         public event EventHandler<FileSystemEventArgs> Changed;
         public event EventHandler<FileSystemEventArgs> Deleted;
@@ -23,7 +23,7 @@ namespace FastVideoDownloader.Automation
             get { return _configFileModel; }
         }
 
-        public ConfigFileChangeListener(SettingsFileModel configFileModel, AsyncFileAccessService fileAccessService)
+        public ConfigFileChangeListener(SettingsFileModel configFileModel, AppSettingsService fileAccessService)
         {
             _fileAccessService = fileAccessService;
             _fileSystemWatcher = new FileSystemWatcher();

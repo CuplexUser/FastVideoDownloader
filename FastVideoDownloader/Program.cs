@@ -18,8 +18,9 @@ if (!logConfig.InitLogConfig())
 }
 
 AppSettings settings;
+string settingsFilePath= ConfigHelper.GetConfigFilePath();
 
-AsyncFileAccessService _asyncFileAccessService = new AsyncFileAccessService(true);
+AppSettingsService _asyncFileAccessService = new AppSettingsService(settingsFilePath);
 settings = await _asyncFileAccessService.LoadAppSettingsAsync();
 
 

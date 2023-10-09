@@ -1,6 +1,6 @@
 ﻿namespace FastVideoDownloader.Config
 {
-    public class ConfigReader
+    public class ConfigHelper
     {
         private const string FileName = "config.json";
 

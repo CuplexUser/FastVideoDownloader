@@ -14,14 +14,15 @@ namespace FastVideoDownloader.Models
         [JsonProperty("downloadParams", Order = 3)]
         public string DownloadParams { get; set; }
 
-        [JsonProperty("downloaderApp", Order = 4)]
-        public string DownloaderApp { get; set; }
-
-        [JsonProperty("autoConfirmDownload", Order = 5)]
+        [JsonProperty("autoConfirmDownload", Order = 4)]
         public bool AutoConfirmDownload { get; set; }
 
-        [JsonProperty("alternetiveConfigData", Order = 6, DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string AlternativeConfigData { get; set; }
+        [JsonProperty("monitorClipboardForVideoUrl", Order = 5)]
+        public bool MonitorClipboardForVideoUrl { get; set; }
+
+        [JsonProperty("clipboardPatternRegExp", Order = 6)]
+        public string ClipboardPatternRegExp { get; set; }
+
 
         public AppSettings()
         {
